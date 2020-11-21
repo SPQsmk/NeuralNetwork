@@ -4,63 +4,61 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) {
         ArrayList<Integer> layers = new ArrayList<>();
-        layers.add(115);
+        layers.add(4);
 
-        NNetwork nNetwork = new NNetwork(784, 10, layers, 0.134);
+        NNetwork nNetwork = new NNetwork(3, 1, layers, 15);
 
-        try (Scanner trainScanner = new Scanner(new File("train.csv"));
-             Scanner testScanner = new Scanner(new File("test.csv"))){
-            double[] input = new double[784];
-            double[] output = new double[10];
+        try (Scanner scanner = new Scanner(new File("data.txt"))) {
+            ArrayList<Double> train = new ArrayList<>();
+            ArrayList<Double> data = new ArrayList<>();
 
-            while (trainScanner.hasNextLine()) {
-                String[] strings = trainScanner.nextLine().split(",");
-                int realNum = Integer.parseInt(strings[0]);
-
-                for (int i = 1; i < strings.length; i++) {
-                    input[i - 1] = (Double.parseDouble(strings[i]) / 255) * 0.99 + 0.01;
+            for (int i = 0; i < 2000; i++) {
+                if (scanner.hasNextDouble()) {
+                    train.add(scanner.nextDouble());
                 }
+            }
 
-                for (int i = 0; i < 10; i++) {
-                    if (i == realNum)
-                        output[i] = 0.99;
-                    else
-                        output[i] = 0.01;
-                }
+            while (scanner.hasNextDouble()) {
+                data.add(scanner.nextDouble());
+            }
+
+            double[] input = new double[3];
+            double[] output = new double[1];
+
+            double max = Collections.max(train);
+            double min = Collections.min(train);
+
+            for (int i = 0; i < train.size() - 3; i++) {
+                input[0] = (train.get(i) - min) / (max - min);
+                input[1] = (train.get(i + 1) - min) / (max - min);
+                input[2] = (train.get(i + 2) - min) / (max - min);
+                output[0] = (train.get(i + 3) - min) / (max - min) / 10;
 
                 nNetwork.train(input, output);
             }
 
-            double ok = 0;
+            double accuracy = 0.0;
             double count = 0;
 
-            while (testScanner.hasNextLine()){
-                String[] strings = testScanner.nextLine().split(",");
-                int realNum = Integer.parseInt(strings[0]);
+            for (int i = 0; i < data.size() - 3; i++) {
+                input[0] = (data.get(i) - min) / (max - min);
+                input[1] = (data.get(i + 1) - min) / (max - min);
+                input[2] = (data.get(i + 2) - min) / (max - min);
+                output[0] = data.get(i + 3);
 
-                for (int i = 1; i < strings.length; i++){
-                    input[i - 1] = (Double.parseDouble(strings[i]) / 255) * 0.99 + 0.01;
-                }
+                double[] out = nNetwork.getResult(input);
+                double res = out[0] * 10 * (max - min) + min;
 
-                double[] res = nNetwork.getResult(input);
-                ArrayList<Double> result = new ArrayList<>();
+                accuracy += (Math.abs(res - output[0])) / output[0] * 100;
+                count++;
 
-                for (int i = 0; i < res.length; i++) {
-                    result.add(res[i]);
-                }
-
-                int maxIndex = result.indexOf(Collections.max(result));
-
-                if (realNum == maxIndex)
-                    ok += 1;
-                count += 1;
-
-                System.out.println("Real number : " + realNum + " Network result : " + maxIndex);
+                System.out.println("real: " + output[0] + " forecast: " + res);
             }
-            System.out.printf("%s%%", ok / count * 100);
+
+            System.out.println("accuracy: " + accuracy / count);
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
     }
 }
