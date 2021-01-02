@@ -49,13 +49,14 @@ public class Main {
                 double[] out = nNetwork.getResult(input);
                 double res = out[0] * 10 * (max - min) + min;
 
-                accuracy += (Math.abs(res - output[0])) / output[0] * 100;
+//                accuracy += (Math.abs(res - output[0])) / output[0] * 100;
+                accuracy += (res - output[0]) * (res - output[0]);
                 count++;
 
                 System.out.println("real: " + output[0] + " forecast: " + res);
             }
 
-            System.out.println("accuracy: " + accuracy / count);
+            System.out.println("accuracy: " + (accuracy / count));
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
